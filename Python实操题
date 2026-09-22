@@ -1,0 +1,34 @@
+import pandas as pd
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from ISLP import load_data
+
+# 加载Carseats数据集
+Carseats = load_data('Carseats')
+
+# 选取自变量与因变量
+y = Carseats['Sales']
+X_raw = Carseats[['Price','Income','Advertising','ShelveLoc']]
+
+# 定性变量ShelveLoc转哑变量，drop_first=True自动去掉基准组
+X = pd.get_dummies(X_raw, columns=['ShelveLoc'], drop_first=True)
+X = sm.add_constant(X) # 添加常数项
+
+# 拟合多元线性回归
+model = sm.OLS(y, X).fit()
+print("=======回归模型报告=======")
+print(model.summary())
+
+# 计算VIF多重共线性
+vif_df = pd.DataFrame()
+vif_df["变量名"] = X.columns
+vif_df["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+print("\n=======VIF多重共线性检测=======")
+print(vif_df)
+
+# ==========作业问题回答==========
+# 1. ShelveLoc基准组：ShelveLoc_Bad（货架位置Bad，被省略作为参照基准）
+# 2. ShelveLoc[Good]系数商业含义：
+# 在Price、Income、Advertising保持不变的前提下，货架位置为Good对比Bad货架，销售额Sales平均增加该系数大小。
+# 3. VIF判断：VIF>10存在严重多重共线性；5~10中等；<5无明显共线性。
+# Carseats这组变量VIF全部小于5，不存在多重共线性风险。
